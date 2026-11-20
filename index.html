@@ -36,8 +36,9 @@ input{font:inherit;padding:7px;width:6em;text-align:center;text-transform:upperc
 .t-mountain{background:#d6d3c4!important}
 .t-forest{background:#b3d094!important}
 .ter{position:absolute;inset:0;width:100%;height:100%;z-index:1;display:block}
-.pc{position:relative;width:96%;height:96%;z-index:5}
+.pc{position:relative;width:96%;height:96%;z-index:5;transition:transform .35s ease}
 .pc svg{width:100%;height:100%;display:block}
+.pc.flip{transform:rotate(180deg)}
 .pc.sl{filter:drop-shadow(0 0 3px #000) drop-shadow(0 0 2px #fff)}
 .pc.gh{opacity:.45;z-index:2}
 .ga,.bd{position:absolute;z-index:6;font-size:9px;font-style:normal;background:#fff4d6;border-radius:4px;padding:0 3px;right:1px;bottom:1px}
@@ -46,8 +47,6 @@ input{font:inherit;padding:7px;width:6em;text-align:center;text-transform:upperc
 .hl{position:absolute;inset:0;z-index:4;pointer-events:none;opacity:.5}
 .hy{background:#f0b030}.hg{background:#3fb55a}.hr{background:#e0453c}.hb{background:#3a7be0}
 .hl.en{opacity:.75;box-shadow:inset 0 0 0 4px #9b2929}
-#game,#bw{transition:transform .7s ease}
-#game.rot,#bw.rot{transform:rotate(180deg)}
 #side{flex:1 1 240px;min-width:min(240px,100%);max-width:420px;padding:0 8px 8px;font-size:14px}
 @media(orientation:landscape){#side{max-height:var(--h);overflow:auto}}
 .cy,.cx{position:absolute;z-index:7;font-size:clamp(7px,26cqw,11px);line-height:1;opacity:.65;pointer-events:none;font-weight:600}
@@ -64,7 +63,7 @@ input{font:inherit;padding:7px;width:6em;text-align:center;text-transform:upperc
 <body>
 <div id="lobby">
  <h1>Chiến Trường</h1>
- <p>Cờ chiến thuật 2 người chơi chung một máy, ngồi đối diện nhau. Bàn cờ tự xoay sau mỗi lượt.</p>
+ <p>Cờ chiến thuật 2 người chơi chung một máy, ngồi đối diện nhau.</p>
  <p><button id="bs">Bắt đầu ván mới</button></p>
  <p id="lobmsg"></p>
 </div>
@@ -152,11 +151,6 @@ function live(s,side){
  return{cells,mine};
 }
 const seeEnemies=(s,side,L)=>s.pieces.filter(q=>q.alive&&q.side!==side&&L.cells.has(q.pos)&&(s.board[q.pos]!=='forest'||L.mine.some(p=>cheb(p.pos,q.pos)<=1)));
-function snap(s,q){
- const cells=vision(s,q),en={};
- s.pieces.forEach(e=>{if(e.alive&&e.side!==q.side&&cells.has(e.pos)&&(s.board[e.pos]!=='forest'||cheb(q.pos,e.pos)<=1))en[e.pos]=e.type});
- return{t:s.n,cells:[...cells],en};
-}
 function apply(s,a){
  const side=s.turn;
  if(s.winner!==null)return false;
@@ -202,19 +196,23 @@ function apply(s,a){
 }
 
 /* ====== UI ====== */
-const G={rotAll:true,hist:[],undoUsed:false,peer:null,s:null,me:0,solo:false,conn:null,sel:null,mode:'move',vis:new Set()};
+const G={hist:[],undoUsed:false,peer:null,s:null,me:0,solo:false,conn:null,sel:null,mode:'move',vis:new Set()};
 const ICON={general:'<path d="M4 18l-1-10 5 4 4-7 4 7 5-4-1 10z"/>',shield:'<path d="M12 3l8 3v6c0 5-4 8-8 10-4-2-8-5-8-10V6z"/>',
 pawn:'<path d="M12 1.5l2.4 3.3v9.2H9.6V4.8z"/><rect x="5.5" y="14" width="13" height="2.6" rx="1.2"/><rect x="10.7" y="16.6" width="2.6" height="4"/><circle cx="12" cy="21.8" r="1.7"/>',
 cav:'<path d="M6 21v-3c0-3 2-5 4-7l-2-.5L5 13l-2-2 6-6 1-3 2.5 2c4.5.5 7.5 5 7.5 10v7z"/><circle cx="12.8" cy="8.2" r="1.1" fill="#1b1b1b"/>',
 archer:'<g fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/></g><circle cx="12" cy="12" r="1.6"/>',
 envoy:'<g fill="none" stroke="#fff" stroke-width="2.2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 7 9-7"/></g>'};
-const tok=(p,x='')=>`<div class="pc ${x}"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11.5" fill="${COL[p.side]}" stroke="#fff4d6"/><g transform="translate(12 12) scale(.7) translate(-12 -12)" fill="#fff">${ICON[p.type]}</g></svg></div>`;
+
+// flip=true khi đến lượt Đỏ → chỉ xoay icon quân 180°
+const tok=(p,x='',flip=false)=>`<div class="pc ${x}${flip?' flip':''}"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11.5" fill="${COL[p.side]}" stroke="#fff4d6"/><g transform="translate(12 12) scale(.7) translate(-12 -12)" fill="#fff">${ICON[p.type]}</g></svg></div>`;
 
 function render(){
  const s=G.s,solo=G.solo;
- // Fix: always view from current turn's side (or winner), so home is near the physical player after CSS rotate
- const vs = solo ? (s.winner!==null && s.winner!=='draw' ? s.winner : s.turn) : G.me;
+ // Bàn cờ cố định: luôn nhìn từ phía Xanh (hàng 1 ở dưới màn hình)
+ const vs = 0;
  const o=occ(s),side=solo?s.turn:G.me,myTurn=(solo||s.turn===G.me)&&s.winner===null;
+ // Khi đến lượt Đỏ (hoặc Đỏ thắng) thì xoay icon để người ngồi đối diện nhìn đúng chiều
+ const flipIcons = (solo ? (s.winner!==null && s.winner!=='draw' ? s.winner : s.turn) : G.me) === 1;
  let L=null;G.vis=new Set();
  if(!solo){L=live(s,vs);seeEnemies(s,vs,L).forEach(q=>G.vis.add(q.pos))}
  const hl={};let sp=G.sel!=null?s.pieces[G.sel]:null;
@@ -226,17 +224,17 @@ function render(){
  }
  let h='';
  for(let y=0;y<NR;y++)for(let x=0;x<NC;x++){
-  const c=vs===0?x:NC-1-x,r=vs===0?NR-1-y:y,i=ix(c,r),t=s.board[i],pc=o[i];
+  const c=x,r=NR-1-y,i=ix(c,r),t=s.board[i],pc=o[i];
   let inner='';
   if(x===0)inner+=`<span class="cy">${r+1}</span>`;
   if(y===NR-1)inner+=`<span class="cx">${'ABCDEFGHIJK'[c]}</span>`;
   if(t==='forest')inner+='<svg class="ter" viewBox="0 0 24 24"><rect x="10.3" y="16" width="3.4" height="7.5" fill="#6b4a2a"/><path d="M12 .5L18.5 9H15l6 7.5H3L9 9H5.5z" fill="#2f7a3a" stroke="#1f5a2a" stroke-width=".6" stroke-linejoin="round"/></svg>';
   if(t==='mountain')inner+='<svg class="ter" viewBox="0 0 24 24"><path d="M0 24L8.5 3.5L12.8 11L16 7L24 24z" fill="#85857e" stroke="#5c5c56" stroke-width=".6" stroke-linejoin="round"/><path d="M8.5 3.5L6.4 8.6L8.6 7.6L10.4 9.4L11.2 8z" fill="#f6f6f0"/><path d="M16 7L14.2 10.6L16 9.8L17.6 11z" fill="#f6f6f0"/></svg>';
   if(pc&&(solo||pc.side===vs||G.vis.has(i))){
-   inner+=tok(pc,pc.id===G.sel?'sl':'');
+   inner+=tok(pc,pc.id===G.sel?'sl':'',flipIcons);
    const k=Object.keys(pc.cargo).length;if(k&&pc.side===side)inner+=`<b class="bd">✉${k}</b>`;
   }else if(!solo){
-   const m=s.mem[vs][i];if(m&&m.e&&!L.cells.has(i))inner+=tok({side:1-vs,type:m.e},'gh')+`<b class="ga">-${s.n-m.t}</b>`;
+   const m=s.mem[vs][i];if(m&&m.e&&!L.cells.has(i))inner+=tok({side:1-vs,type:m.e},'gh',flipIcons)+`<b class="ga">-${s.n-m.t}</b>`;
   }
   if(!solo&&!L.cells.has(i))inner+=`<div class="fog${s.mem[vs][i]?' m':''}"></div>`;
   if(hl[i])inner+=`<i class="hl ${hl[i]}"></i>`;
@@ -244,9 +242,6 @@ function render(){
  }
  $('board').innerHTML=h;
  $('bu').disabled=!canUndo();
- // Rotate when viewing from side 1 so the opposite player sees upright + their home near them
- const needRot = (vs===1);
- $('game').classList.toggle('rot',needRot&&G.rotAll);$('bw').classList.toggle('rot',needRot&&!G.rotAll);
  let st;
  if(s.winner==='draw')st='Hòa: cả hai Tướng cùng ngã.';
  else if(s.winner!==null)st=`${SIDE[s.winner]} thắng!`+(!solo&&s.winner===G.me?' 🎉':'');
