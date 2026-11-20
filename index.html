@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#3a2f14">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Chiến Trường">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Chiến Trường – chơi chung một máy</title>
+<style>
+*{box-sizing:border-box}
+:root{--h:100vh}@supports(height:100dvh){:root{--h:100dvh}}
+body{margin:0;background:#fbf6e8;color:#3a2f14;font-family:system-ui,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;line-height:1.5;overscroll-behavior:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+button{font:inherit;padding:7px 13px;border:2px solid #3a2f14;background:#f0c36a;border-radius:6px;cursor:pointer;color:#3a2f14}
+button:disabled{opacity:.4;cursor:default}
+button.on{background:#3a2f14;color:#fbf6e8}
+input{font:inherit;padding:7px;width:6em;text-align:center;text-transform:uppercase;border:2px solid #3a2f14;border-radius:6px;background:#fff9e8}
+#lobby{max-width:660px;margin:4vh auto;padding:20px;text-align:center}
+#tut{text-align:left;margin-top:22px;border-top:2px solid #3a2f14;padding-top:14px;font-size:14.5px}
+#tut h2{font-size:1.15rem;margin:16px 0 6px}
+#tut p{margin:4px 0}
+#tut table{width:100%;border-collapse:collapse;margin:6px 0}
+#tut td{padding:6px 6px;border-top:1px solid #d3c49a;vertical-align:top}
+#tut td:first-child{width:92px;white-space:nowrap;font-weight:600}
+.ic{display:inline-block;width:26px;height:26px;vertical-align:middle;margin-right:4px}
+.ic .pc{width:100%;height:100%}
+.sw{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+#lobby h1{font-size:2.2rem;margin:0 0 4px;letter-spacing:.5px}
+#game{display:none;gap:8px;justify-content:center;align-items:flex-start;flex-wrap:wrap;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+#bw{--bs:min(calc(100vw - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)),calc(var(--h) - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)),1000px);width:var(--bs);height:var(--bs);flex:none}
+#board{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));grid-template-rows:repeat(11,minmax(0,1fr));width:100%;height:100%;border:2px solid #3a2f14;user-select:none;-webkit-user-select:none}
+.cell{position:relative;container-type:size;background:#f1e5c3;border:1px solid #b9a67a;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer}
+.cell:nth-child(2n){background:#ebdcb6}
+.t-water{background:#6aa5c8!important}
+.t-bridge{background:repeating-linear-gradient(90deg,#b0803f 0 5px,#8c5f2d 5px 7px)!important}
+.t-mountain{background:#d6d3c4!important}
+.t-forest{background:#b3d094!important}
+.ter{position:absolute;inset:0;width:100%;height:100%;z-index:1;display:block}
+.pc{position:relative;width:96%;height:96%;z-index:5}
+.pc svg{width:100%;height:100%;display:block}
+.pc.sl{filter:drop-shadow(0 0 3px #000) drop-shadow(0 0 2px #fff)}
+.pc.gh{opacity:.45;z-index:2}
+.ga,.bd{position:absolute;z-index:6;font-size:9px;font-style:normal;background:#fff4d6;border-radius:4px;padding:0 3px;right:1px;bottom:1px}
+.fog{position:absolute;inset:0;background:rgba(30,25,15,.66);z-index:3;pointer-events:none}
+.fog.m{background:rgba(30,25,15,.3)}
+.hl{position:absolute;inset:0;z-index:4;pointer-events:none;opacity:.5}
+.hy{background:#f0b030}.hg{background:#3fb55a}.hr{background:#e0453c}.hb{background:#3a7be0}
+.hl.en{opacity:.75;box-shadow:inset 0 0 0 4px #9b2929}
+#game,#bw{transition:transform .7s ease}
+#game.rot,#bw.rot{transform:rotate(180deg)}
+#side{flex:1 1 240px;min-width:min(240px,100%);max-width:420px;padding:0 8px 8px;font-size:14px}
+@media(orientation:landscape){#side{max-height:var(--h);overflow:auto}}
+.cy,.cx{position:absolute;z-index:7;font-size:clamp(7px,26cqw,11px);line-height:1;opacity:.65;pointer-events:none;font-weight:600}
+.cy{left:2px;top:2px}.cx{left:2px;bottom:1px}
+#side>div{margin-bottom:10px}
+#st{font-size:1.2rem;font-weight:bold}
+#sel{background:#f3e8c8;border:1px solid #b9a67a;border-radius:6px;padding:8px;min-height:60px}
+#modes{margin-top:6px;display:flex;gap:4px;flex-wrap:wrap}
+#modes button{padding:4px 8px;font-size:13px}
+#log{max-height:110px;overflow:auto;font-size:13px;line-height:1.4}
+#log p{margin:0 0 3px;padding-left:6px;border-left:3px solid #b9a67a}
+#log p.s0{border-color:#1f6f6b}#log p.s1{border-color:#9b2929}
+details{font-size:13px;line-height:1.45}
+</style></head>
+<body>
+<div id="lobby">
+ <h1>Chiến Trường</h1>
+ <p>Cờ chiến thuật 2 người chơi chung một máy, ngồi đối diện nhau. Bàn cờ tự xoay sau mỗi lượt.</p>
+ <p><button id="bs">Bắt đầu ván mới</button></p>
+ <p id="lobmsg"></p>
+ <div id="tut">
+  <h2>Hướng dẫn nhanh</h2>
+  <p><b>Mục tiêu:</b> bắt (ăn) được Tướng của đối phương. Mỗi bên có 12 quân. Mỗi lượt bạn có <b>3 thao tác</b>, bấm "Kết thúc lượt" nếu muốn nhường sớm.</p>
+  <h2>Cách đi và ăn quân</h2>
+  <p>1. Bấm vào quân của bạn, các ô có thể đến sẽ sáng màu.<br>2. Bấm vào ô sáng để đi. Nếu ô đó có quân địch thì bạn tấn công và ăn quân.</p>
+  <p><span class="sw" style="background:#f0b030"></span>Vàng: đi vào ô trống hoặc ăn quân địch ở ô đó (viền đỏ là có địch).<br>
+  <span class="sw" style="background:#3fb55a"></span>Xanh lá: chỉ đi được, không ăn.<br>
+  <span class="sw" style="background:#e0453c"></span>Đỏ: Cung thủ bắn được ô này.<br>
+  <span class="sw" style="background:#3a7be0"></span>Xanh dương: ô Bộ binh có thể đào, xây hoặc phá.</p>
+  <p><b>Ăn quân:</b> giống cờ tướng, đi vào ô có quân địch là ăn quân đó (chỉ Cung thủ bắn từ xa). Không có so sức mạnh.</p>
+  <table>
+   <tr><td><span class="ic" data-t="general"></span>Tướng</td><td>Đi 1 ô mọi hướng (ăn được), hoặc 2 ô nếu ô giữa trống (chỉ đi). Mất Tướng là thua.</td></tr>
+   <tr><td><span class="ic" data-t="pawn"></span>Bộ binh</td><td>Đi hoặc ăn 1 ô theo 8 hướng (cả chéo). Chọn nút <b>Đào hào / Xây cầu / Phá cầu</b> rồi bấm ô kề bên (4 hướng) để làm địa hình.</td></tr>
+   <tr><td><span class="ic" data-t="cav"></span>Kỵ binh</td><td>Chạy thẳng 1 đến 3 ô theo 4 hướng, không nhảy qua quân. Ăn quân ở ô cuối đường.</td></tr>
+   <tr><td><span class="ic" data-t="archer"></span>Cung thủ</td><td>Đi hoặc ăn 1 ô theo 4 hướng. Bắn đúng cách 2 ô theo 8 hướng, bắn qua được núi và không bị phản đòn. Hạ mọi quân trừ Khiên.</td></tr>
+   <tr><td><span class="ic" data-t="shield"></span>Khiên</td><td>Đi hoặc ăn 1 ô theo 8 hướng. Không bị đạn cung bắn trúng.</td></tr>
+   <tr><td><span class="ic" data-t="envoy"></span>Sứ giả</td><td>Không tấn công được. Đi tối đa 4 ô theo đường bộ, được rẽ nhưng không nhảy qua quân. Chạm vào là bị bắt.</td></tr>
+  </table>
+  <h2>Chơi chung một máy</h2>
+  <p>Đặt máy nằm giữa hai người ngồi đối diện. Quân Xanh đi trước. Khi hết 3 thao tác (hoặc bấm Kết thúc lượt), <b>bàn cờ tự xoay 180°</b> để người đối diện thấy bàn cờ y hệt như người trước đã thấy. Không có sương mù, cả hai thấy toàn bộ bàn cờ. Nút Đi lại chỉ dùng trong lượt của bạn.</p>
+  <h2>Địa hình</h2>
+  <p><b>Sông (hàng 6):</b> chỉ qua được bằng cầu B6, F6, J6 hoặc cầu Bộ binh xây thêm. Bộ binh cũng đào hào chặn đường hoặc phá cầu được.</p>
+  <p><b>Núi (F4, F8):</b> mọi quân không đi và không tấn công xuyên qua được, chỉ đạn Cung bắn qua được.</p>
+  <p><b>Rừng:</b> chỉ là ô đi lại bình thường.</p>
+ </div>
+</div>
+<div id="game">
+ <div id="bw"><div id="board"></div></div>
+ <div id="side">
+  <div id="st"></div>
+  <div id="sel"></div>
+  <div id="log"></div>
+  <details><summary>Luật chơi</summary>
+   <p>Mỗi bên 12 quân: 1 Tướng, 3 Bộ binh, 2 Kỵ binh, 2 Cung thủ, 2 Khiên, 2 Sứ giả. Mỗi lượt có 3 thao tác (đi/bắn một quân, hoặc đào/xây/phá của Bộ binh), có thể dùng cùng một quân nhiều lần; bấm Kết thúc lượt để nhường sớm. Bắt được Tướng địch là thắng.</p>
+   <p>Ăn quân giống cờ tướng: đi vào ô địch là ăn (trừ Cung thủ bắn từ xa).</p>
+   <p>Chơi chung một máy: sau mỗi lượt bàn cờ tự xoay 180° cho người ngồi đối diện. Không có sương mù.</p>
+   <p>Hàng sông ở hàng 6: chỉ qua được bằng cầu B6, F6, J6 (hoặc cầu do Bộ binh xây). Núi F4, F8 chặn mọi quân trừ đạn Cung.</p>
+  </details>
+  <div><button id="be">Kết thúc lượt</button> <button id="bu">Đi lại</button></div>
+  <div><label style="font-size:13px"><input type="checkbox" id="ra" checked style="width:auto"> Xoay cả bảng điều khiển</label></div>
+  <div><button id="bn">Ván mới</button> <button id="bl">Về sảnh</button></div>
+ </div>
+</div>
+<script>
+const N=11,NAMES={general:'Tướng',pawn:'Bộ binh',cav:'Kỵ binh',archer:'Cung thủ',shield:'Khiên',envoy:'Sứ giả'};
+const DESC={
+general:'Đi 1 ô 8 hướng (ăn được), hoặc 2 ô khi ô giữa trống (chỉ đi). Tầm chỉ huy 3 ô.',
+pawn:'Đi/ăn 1 ô 8 hướng (cả chéo). Đào hào, xây cầu, phá cầu ở ô kề (4 hướng).',
+cav:'Chạy thẳng 1–3 ô, ăn ở ô cuối.',
+archer:'Đi/ăn 1 ô 4 hướng. Bắn đúng 2 ô (8 hướng), cả khi không thấy, qua núi, không bị phản đòn. Hạ mọi quân trừ Khiên.',
+shield:'Đi/ăn 1 ô 8 hướng. Miễn nhiễm đạn cung.',
+envoy:'Đi tối đa 4 ô theo đường bộ (được rẽ), không nhảy qua quân. Chạm vào là bị bắt.'};
+const SIDE=['Xanh','Đỏ'],COL=['#1f6f6b','#9b2929'],TERR={dig:'plain',bridge:'water',break:'bridge'};
+const MODEN={move:'Đi / ăn',dig:'Đào hào',bridge:'Xây cầu',break:'Phá cầu'};
+const D4=[[1,0],[-1,0],[0,1],[0,-1]],D8=D4.concat([[1,1],[1,-1],[-1,1],[-1,-1]]);
+const col=i=>i%N,row=i=>(i/N)|0,inb=(c,r)=>c>=0&&c<N&&r>=0&&r<N,ix=(c,r)=>r*N+c;
+const cheb=(a,b)=>Math.max(Math.abs(col(a)-col(b)),Math.abs(row(a)-row(b)));
+const lab=i=>'ABCDEFGHIJK'[col(i)]+(row(i)+1);
+const $=id=>document.getElementById(id);
+
+/* ====== LOGIC ====== */
+function newState(){
+ const board=Array(121).fill('plain');
+ for(let c=0;c<N;c++)board[ix(c,5)]='water';
+ [1,5,9].forEach(c=>board[ix(c,5)]='bridge');
+ [[0,7],[9,7],[0,3],[9,3],[3,0],[3,10],[7,0],[7,10],[3,3],[3,7],[7,3],[7,7]].forEach(([c,r])=>board[ix(c,r)]='forest');
+ board[ix(5,3)]=board[ix(5,7)]='mountain';
+ const L=[['general',5,0],['envoy',4,0],['envoy',6,0],['cav',3,1],['cav',7,1],['archer',4,1],['archer',6,1],['shield',4,2],['shield',6,2],['pawn',2,2],['pawn',5,2],['pawn',8,2]];
+ const pieces=[];let id=0;
+ for(const side of [0,1])for(const [t,c,r] of L)pieces.push({id:id++,side,type:t,pos:side?ix(10-c,10-r):ix(c,r),alive:true,cargo:{}});
+ return{board,pieces,turn:0,left:3,n:0,winner:null,mem:[{},{}],log:[]};
+}
+const occ=s=>{const o={};s.pieces.forEach(p=>{if(p.alive)o[p.pos]=p});return o};
+const pass=(s,i)=>s.board[i]!=='mountain'&&s.board[i]!=='water';
+
+/* known(i): có coi ô i chứa quân địch hay không (địch không biết = coi như ô trống) */
+function gen(s,p,known){
+ const o=occ(s),out=[],c0=col(p.pos),r0=row(p.pos);
+ const st=i=>{const q=o[i];return!q?0:q.side===p.side?1:known(i)?2:0};
+ const at=(dc,dr,k)=>{const c=c0+dc*k,r=r0+dr*k;return inb(c,r)?ix(c,r):-1};
+ const one=dirs=>{for(const[dc,dr]of dirs){const a=at(dc,dr,1);if(a<0||!pass(s,a))continue;const z=st(a);if(z===1)continue;out.push({to:a,kind:z?'attack':'move',path:[a]})}};
+ switch(p.type){
+ case'general':
+  for(const[dc,dr]of D8){const a=at(dc,dr,1);if(a<0||!pass(s,a))continue;const z=st(a);if(z===1)continue;
+   out.push({to:a,kind:z?'attack':'move',path:[a]});
+   if(!z){const b=at(dc,dr,2);if(b>=0&&pass(s,b)&&st(b)===0)out.push({to:b,kind:'move',path:[a,b]})}}
+  break;
+ case'pawn':one(D8);break;
+ case'shield':one(D8);break;
+ case'archer':one(D4);
+  for(const[dc,dr]of D8){const b=at(dc,dr,2);if(b<0||!pass(s,b))continue;if(o[b]&&o[b].side===p.side)continue;out.push({to:b,kind:'shoot',path:[]})}
+  break;
+ case'cav':
+  for(const[dc,dr]of D4){const path=[];for(let k=1;k<=3;k++){const a=at(dc,dr,k);if(a<0||!pass(s,a))break;const z=st(a);if(z===1)break;path.push(a);out.push({to:a,kind:z?'attack':'move',path:path.slice()});if(z)break}}
+  break;
+ case'envoy':{
+  const prev={[p.pos]:null},dist={[p.pos]:0},q=[p.pos];
+  while(q.length){const u=q.shift();if(dist[u]>=4)continue;
+   for(const[dc,dr]of D4){const c=col(u)+dc,r=row(u)+dr;if(!inb(c,r))continue;const v=ix(c,r);if(v in prev||!pass(s,v)||st(v))continue;prev[v]=u;dist[v]=dist[u]+1;q.push(v)}}
+  for(const k in prev){const v=+k;if(v===p.pos)continue;const path=[];for(let x=v;x!==p.pos;x=prev[x])path.unshift(x);out.push({to:v,kind:'move',path})}
+ }}
+ return out;
+}
+function vision(s,p){
+ const v=new Set([p.pos]);
+ if(p.type==='shield'){for(let dc=-2;dc<=2;dc++)for(let dr=-2;dr<=2;dr++){const c=col(p.pos)+dc,r=row(p.pos)+dr;if(inb(c,r))v.add(ix(c,r))}}
+ else gen(s,p,()=>true).forEach(m=>{v.add(m.to);m.path.forEach(x=>v.add(x))});
+ return v;
+}
+function live(s,side){
+ const mine=s.pieces.filter(p=>p.alive&&p.side===side),g=mine.find(p=>p.type==='general'),cells=new Set(mine.map(p=>p.pos));
+ if(g)mine.forEach(p=>{if(p.type!=='envoy'&&cheb(p.pos,g.pos)<=3)vision(s,p).forEach(i=>cells.add(i))});
+ return{cells,mine};
+}
+const seeEnemies=(s,side,L)=>s.pieces.filter(q=>q.alive&&q.side!==side&&L.cells.has(q.pos)&&(s.board[q.pos]!=='forest'||L.mine.some(p=>cheb(p.pos,q.pos)<=1)));
+function snap(s,q){
+ const cells=vision(s,q),en={};
+ s.pieces.forEach(e=>{if(e.alive&&e.side!==q.side&&cells.has(e.pos)&&(s.board[e.pos]!=='forest'||cheb(q.pos,e.pos)<=1))en[e.pos]=e.type});
+ return{t:s.n,cells:[...cells],en};
+}
+function apply(s,a){
+ const side=s.turn;
+ if(s.winner!==null)return false;
+ if(a.k==='end'){s.log.unshift({n:s.n+1,side,txt:'Kết thúc lượt.',seen:[true,true]});s.n++;s.turn=1-side;s.left=3;return 1}
+ const p=s.pieces[a.id];
+ if(!p||!p.alive||p.side!==side)return false;
+ const before=[live(s,0).cells,live(s,1).cells],o=occ(s);
+ let txt='',cells=[p.pos,a.to],walked=[p.pos],risky=false;
+ if(a.k==='terrain'){
+  const dd=Math.abs(col(p.pos)-col(a.to))+Math.abs(row(p.pos)-row(a.to));
+  if(p.type!=='pawn'||dd!==1||!TERR[a.op]||s.board[a.to]!==TERR[a.op])return false;
+  const nm=MODEN[a.op].toLowerCase();
+  if(o[a.to]){risky=true;txt=`Bộ binh ${lab(p.pos)} muốn ${nm} ở ${lab(a.to)} nhưng có quân đứng đó.`}
+  else{s.board[a.to]={dig:'water',bridge:'bridge',break:'water'}[a.op];txt=`Bộ binh ${lab(p.pos)}: ${nm} ở ${lab(a.to)}.`}
+ }else{
+  const m=gen(s,p,()=>false).find(m=>m.to===a.to&&(a.k==='shoot')===(m.kind==='shoot'));
+  if(!m)return false;
+  if(m.kind==='shoot'){
+   risky=true;const q=o[a.to];
+   if(!q)txt=`Cung thủ ${lab(p.pos)} bắn vào ${lab(a.to)}: trượt.`;
+   else if(q.type==='shield')txt=`Cung thủ ${lab(p.pos)} bắn Khiên ${lab(a.to)}: bị khiên chắn.`;
+   else{q.alive=false;txt=`Cung thủ ${lab(p.pos)} bắn hạ ${NAMES[q.type]} tại ${lab(a.to)}.`}
+  }else{
+   const from=p.pos;let cur=from,fought='';
+   for(let i=0;i<m.path.length;i++){
+    const c=m.path[i],q=o[c];
+    if(!q){cur=c;walked.push(c);continue}
+    if(q.side===p.side||p.type==='envoy'||(p.type==='general'&&i>0))break;
+    cells.push(c);q.alive=false;cur=c;walked.push(c);fought=`${NAMES[p.type]} ${lab(from)} ăn ${NAMES[q.type]} tại ${lab(c)}.`;risky=true;
+    break;
+   }
+   if(p.alive)p.pos=cur;
+   if(!fought&&cur===from)risky=true;
+   txt=fought||(cur!==from?`${NAMES[p.type]} đi ${lab(from)} → ${lab(cur)}.`:`${NAMES[p.type]} ${lab(from)} bị chặn, không đi được.`);
+  }
+ }
+ const gs=[0,1].map(sd=>s.pieces.some(x=>x.side===sd&&x.type==='general'&&x.alive));
+ if(!gs[0]&&!gs[1])s.winner='draw';else if(!gs[0])s.winner=1;else if(!gs[1])s.winner=0;
+ [0,1].forEach(sd=>{const L=live(s,sd).cells;for(const k in s.mem[sd])if(L.has(+k))delete s.mem[sd][k]});
+ const after=[live(s,0).cells,live(s,1).cells];
+ s.log.unshift({n:s.n+1,side,txt,seen:[0,1].map(sd=>sd===side||cells.some(c=>before[sd].has(c)||after[sd].has(c)))});
+ s.n++;s.left--;if(s.left<=0||s.winner!==null){s.turn=1-side;s.left=3}return risky?2:1;
+}
+
+/* ====== UI ====== */
+const G={rotAll:true,hist:[],undoUsed:false,peer:null,s:null,me:0,solo:false,conn:null,sel:null,mode:'move',vis:new Set()};
+const ICON={general:'<path d="M4 18l-1-10 5 4 4-7 4 7 5-4-1 10z"/>',shield:'<path d="M12 3l8 3v6c0 5-4 8-8 10-4-2-8-5-8-10V6z"/>',
+pawn:'<path d="M12 1.5l2.4 3.3v9.2H9.6V4.8z"/><rect x="5.5" y="14" width="13" height="2.6" rx="1.2"/><rect x="10.7" y="16.6" width="2.6" height="4"/><circle cx="12" cy="21.8" r="1.7"/>',
+cav:'<path d="M6 21v-3c0-3 2-5 4-7l-2-.5L5 13l-2-2 6-6 1-3 2.5 2c4.5.5 7.5 5 7.5 10v7z"/><circle cx="12.8" cy="8.2" r="1.1" fill="#1b1b1b"/>',
+archer:'<g fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/></g><circle cx="12" cy="12" r="1.6"/>',
+envoy:'<g fill="none" stroke="#fff" stroke-width="2.2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 7 9-7"/></g>'};
+const tok=(p,x='')=>`<div class="pc ${x}"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11.5" fill="${COL[p.side]}" stroke="#fff4d6"/><g transform="translate(12 12) scale(.7) translate(-12 -12)" fill="#fff">${ICON[p.type]}</g></svg></div>`;
+
+function render(){
+ const s=G.s,solo=G.solo,vs=solo?0:G.me,o=occ(s),side=solo?s.turn:G.me,myTurn=(solo||s.turn===G.me)&&s.winner===null;
+ let L=null;G.vis=new Set();
+ if(!solo){L=live(s,vs);seeEnemies(s,vs,L).forEach(q=>G.vis.add(q.pos))}
+ const hl={};let sp=G.sel!=null?s.pieces[G.sel]:null;
+ if(sp&&(!sp.alive||sp.side!==side))sp=null;
+ if(sp&&myTurn){
+  if(G.mode==='move')gen(s,sp,j=>solo||G.vis.has(j)).forEach(m=>{hl[m.to]=m.kind==='shoot'?'hr':(sp.type==='envoy'||(sp.type==='general'&&m.path.length>1))?'hg':m.kind==='attack'?'hy en':'hy'});
+  else D4.forEach(([dc,dr])=>{const c=col(sp.pos)+dc,r=row(sp.pos)+dr;if(!inb(c,r))return;const j=ix(c,r);
+   if(TERR[G.mode]===s.board[j]&&!(o[j]&&(o[j].side===side||solo||G.vis.has(j))))hl[j]='hb'});
+ }
+ let h='';
+ for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+  const c=vs===0?x:10-x,r=vs===0?10-y:y,i=ix(c,r),t=s.board[i],pc=o[i];
+  let inner='';
+  if(x===0)inner+=`<span class="cy">${r+1}</span>`;
+  if(y===N-1)inner+=`<span class="cx">${'ABCDEFGHIJK'[c]}</span>`;
+  if(t==='forest')inner+='<svg class="ter" viewBox="0 0 24 24"><rect x="10.3" y="16" width="3.4" height="7.5" fill="#6b4a2a"/><path d="M12 .5L18.5 9H15l6 7.5H3L9 9H5.5z" fill="#2f7a3a" stroke="#1f5a2a" stroke-width=".6" stroke-linejoin="round"/></svg>';
+  if(t==='mountain')inner+='<svg class="ter" viewBox="0 0 24 24"><path d="M0 24L8.5 3.5L12.8 11L16 7L24 24z" fill="#85857e" stroke="#5c5c56" stroke-width=".6" stroke-linejoin="round"/><path d="M8.5 3.5L6.4 8.6L8.6 7.6L10.4 9.4L11.2 8z" fill="#f6f6f0"/><path d="M16 7L14.2 10.6L16 9.8L17.6 11z" fill="#f6f6f0"/></svg>';
+  if(pc&&(solo||pc.side===vs||G.vis.has(i))){
+   inner+=tok(pc,pc.id===G.sel?'sl':'');
+   const k=Object.keys(pc.cargo).length;if(k&&pc.side===side)inner+=`<b class="bd">✉${k}</b>`;
+  }else if(!solo){
+   const m=s.mem[vs][i];if(m&&m.e&&!L.cells.has(i))inner+=tok({side:1-vs,type:m.e},'gh')+`<b class="ga">-${s.n-m.t}</b>`;
+  }
+  if(!solo&&!L.cells.has(i))inner+=`<div class="fog${s.mem[vs][i]?' m':''}"></div>`;
+  if(hl[i])inner+=`<i class="hl ${hl[i]}"></i>`;
+  h+=`<div class="cell t-${t}" data-i="${i}">${inner}</div>`;
+ }
+ $('board').innerHTML=h;
+ $('bu').disabled=!canUndo();
+ const rot=s.winner!==null&&s.winner!=='draw'?s.winner===1:s.turn===1;
+ $('game').classList.toggle('rot',rot&&G.rotAll);$('bw').classList.toggle('rot',rot&&!G.rotAll);
+ let st;
+ if(s.winner==='draw')st='Hòa: cả hai Tướng cùng ngã.';
+ else if(s.winner!==null)st=`${SIDE[s.winner]} thắng!`+(!solo&&s.winner===G.me?' 🎉':'');
+ else st=`Lượt ${SIDE[s.turn]}`+(s.winner!==null?'':` · còn ${s.left} thao tác`)+(solo?'':myTurn?' – đến bạn':' – chờ đối thủ');
+ $('st').innerHTML=(solo?'':`<div style="font-size:.9rem;color:${COL[G.me]}">Bạn là quân ${SIDE[G.me]}</div>`)+st;
+ let si='<i>Chọn một quân của bạn.</i>';
+ if(sp){
+  si=`<b style="color:${COL[sp.side]}">${NAMES[sp.type]} ${lab(sp.pos)}</b><br>${DESC[sp.type]}`;
+  if(sp.type==='pawn')si+='<div id="modes">'+Object.keys(MODEN).map(k=>`<button data-m="${k}" class="${G.mode===k?'on':''}">${MODEN[k]}</button>`).join('')+'</div>';
+ }
+ $('sel').innerHTML=si;
+ $('log').innerHTML=s.log.slice(0,14).map(e=>`<p class="s${e.side}">${e.seen[vs]||solo?e.txt:SIDE[e.side]+' đã hành động ngoài tầm nhìn.'}</p>`).join('');
+}
+function click(i){
+ const s=G.s;if(s.winner!==null)return;
+ const solo=G.solo,side=solo?s.turn:G.me,myTurn=solo||s.turn===G.me,p=occ(s)[i];
+ if(p&&p.side===side){G.sel=p.id;G.mode='move';return render()}
+ if(!myTurn||G.sel==null)return;
+ const sp=s.pieces[G.sel];let a=null;
+ if(!sp||!sp.alive||sp.side!==side)return;
+ if(G.mode==='move'){const m=gen(s,sp,j=>solo||G.vis.has(j)).find(m=>m.to===i);if(m)a={k:m.kind==='shoot'?'shoot':'move',id:sp.id,to:i}}
+ else{
+  const dd=Math.abs(col(sp.pos)-col(i))+Math.abs(row(sp.pos)-row(i));
+  if(dd===1&&TERR[G.mode]===s.board[i]&&!(p&&(solo||G.vis.has(i))))a={k:'terrain',id:sp.id,to:i,op:G.mode};
+ }
+ if(a)act(a,false);
+}
+function act(a,remote){
+ const snap=JSON.stringify(G.s),t0=G.s.turn,n=G.s.n,r=apply(G.s,a);
+ if(!r)return;
+ if(!remote&&G.conn)G.conn.send({t:'act',n,a});
+ if(G.s.turn!==t0){G.hist=[];G.undoUsed=false}else G.hist.push({snap,risky:r===2});
+ G.sel=null;G.mode='move';render();
+}
+const canUndo=()=>!!G.s&&G.s.winner===null&&(G.solo||G.s.turn===G.me)&&G.hist.length>0&&!G.undoUsed&&!G.hist[G.hist.length-1].risky;
+function undo(remote){
+ if(!G.hist.length)return;
+ G.s=JSON.parse(G.hist.pop().snap);G.undoUsed=true;G.sel=null;G.mode='move';
+ if(!remote&&G.conn)G.conn.send({t:'undo'});render();
+}
+function toLobby(){
+ const c=G.conn;G.conn=null;if(c)try{c.close()}catch(e){}
+ if(G.peer){try{G.peer.destroy()}catch(e){}G.peer=null}
+ G.s=null;$('game').style.display='none';$('lobby').style.display='block';msg('');
+}
+$('board').onclick=e=>{const c=e.target.closest('.cell');if(c)click(+c.dataset.i)};
+$('sel').onclick=e=>{const b=e.target.closest('button[data-m]');if(b){G.mode=b.dataset.m;render()}};
+
+const msg=t=>$('lobmsg').textContent=t;
+function start(me,solo){G.s=newState();G.hist=[];G.undoUsed=false;G.me=0;G.solo=true;G.sel=null;G.mode='move';$('lobby').style.display='none';$('game').style.display='flex';render()}
+document.querySelectorAll('.ic').forEach(e=>e.innerHTML=tok({side:0,type:e.dataset.t}));
+$('bs').onclick=()=>start();
+$('be').onclick=()=>{const s=G.s;if(s.winner===null&&(G.solo||s.turn===G.me))act({k:'end'},false)};
+$('bu').onclick=()=>{if(canUndo())undo(false)};
+$('bl').onclick=()=>{if(G.solo||!G.s||G.s.winner!==null||confirm('Thoát về sảnh? Ván đang chơi sẽ kết thúc.'))toLobby()};
+$('ra').onchange=e=>{G.rotAll=e.target.checked;render()};
+$('bn').onclick=()=>{start()};
+if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+</script>
+</body></html>
