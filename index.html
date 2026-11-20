@@ -17,19 +17,18 @@ button:disabled{opacity:.4;cursor:default}
 button.on{background:#3a2f14;color:#fbf6e8}
 input{font:inherit;padding:7px;width:6em;text-align:center;text-transform:uppercase;border:2px solid #3a2f14;border-radius:6px;background:#fff9e8}
 #lobby{max-width:660px;margin:4vh auto;padding:20px;text-align:center}
-#tut{text-align:left;margin-top:22px;border-top:2px solid #3a2f14;padding-top:14px;font-size:14.5px}
-#tut h2{font-size:1.15rem;margin:16px 0 6px}
-#tut p{margin:4px 0}
-#tut table{width:100%;border-collapse:collapse;margin:6px 0}
-#tut td{padding:6px 6px;border-top:1px solid #d3c49a;vertical-align:top}
-#tut td:first-child{width:92px;white-space:nowrap;font-weight:600}
-.ic{display:inline-block;width:26px;height:26px;vertical-align:middle;margin-right:4px}
-.ic .pc{width:100%;height:100%}
-.sw{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:4px}
 #lobby h1{font-size:2.2rem;margin:0 0 4px;letter-spacing:.5px}
 #game{display:none;gap:8px;justify-content:center;align-items:flex-start;flex-wrap:wrap;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
-#bw{--bs:min(calc(100vw - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)),calc(var(--h) - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)),1000px);width:var(--bs);height:var(--bs);flex:none}
-#board{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));grid-template-rows:repeat(11,minmax(0,1fr));width:100%;height:100%;border:2px solid #3a2f14;user-select:none;-webkit-user-select:none}
+#bw{
+  --cell:min(
+    calc((100vw - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px) - 16px) / 11),
+    calc((var(--h) - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 80px) / 13)
+  );
+  width:calc(var(--cell) * 11);
+  height:calc(var(--cell) * 13);
+  flex:none;
+}
+#board{display:grid;grid-template-columns:repeat(11,minmax(0,1fr));grid-template-rows:repeat(13,minmax(0,1fr));width:100%;height:100%;border:2px solid #3a2f14;user-select:none;-webkit-user-select:none}
 .cell{position:relative;container-type:size;background:#f1e5c3;border:1px solid #b9a67a;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer}
 .cell:nth-child(2n){background:#ebdcb6}
 .t-water{background:#6aa5c8!important}
@@ -61,7 +60,6 @@ input{font:inherit;padding:7px;width:6em;text-align:center;text-transform:upperc
 #log{max-height:110px;overflow:auto;font-size:13px;line-height:1.4}
 #log p{margin:0 0 3px;padding-left:6px;border-left:3px solid #b9a67a}
 #log p.s0{border-color:#1f6f6b}#log p.s1{border-color:#9b2929}
-details{font-size:13px;line-height:1.45}
 </style></head>
 <body>
 <div id="lobby">
@@ -69,31 +67,6 @@ details{font-size:13px;line-height:1.45}
  <p>Cờ chiến thuật 2 người chơi chung một máy, ngồi đối diện nhau. Bàn cờ tự xoay sau mỗi lượt.</p>
  <p><button id="bs">Bắt đầu ván mới</button></p>
  <p id="lobmsg"></p>
- <div id="tut">
-  <h2>Hướng dẫn nhanh</h2>
-  <p><b>Mục tiêu:</b> bắt (ăn) được Tướng của đối phương. Mỗi bên có 12 quân. Mỗi lượt bạn có <b>3 thao tác</b>, bấm "Kết thúc lượt" nếu muốn nhường sớm.</p>
-  <h2>Cách đi và ăn quân</h2>
-  <p>1. Bấm vào quân của bạn, các ô có thể đến sẽ sáng màu.<br>2. Bấm vào ô sáng để đi. Nếu ô đó có quân địch thì bạn tấn công và ăn quân.</p>
-  <p><span class="sw" style="background:#f0b030"></span>Vàng: đi vào ô trống hoặc ăn quân địch ở ô đó (viền đỏ là có địch).<br>
-  <span class="sw" style="background:#3fb55a"></span>Xanh lá: chỉ đi được, không ăn.<br>
-  <span class="sw" style="background:#e0453c"></span>Đỏ: Cung thủ bắn được ô này.<br>
-  <span class="sw" style="background:#3a7be0"></span>Xanh dương: ô Bộ binh có thể đào, xây hoặc phá.</p>
-  <p><b>Ăn quân:</b> giống cờ tướng, đi vào ô có quân địch là ăn quân đó (chỉ Cung thủ bắn từ xa). Không có so sức mạnh.</p>
-  <table>
-   <tr><td><span class="ic" data-t="general"></span>Tướng</td><td>Đi 1 ô mọi hướng (ăn được), hoặc 2 ô nếu ô giữa trống (chỉ đi). Mất Tướng là thua.</td></tr>
-   <tr><td><span class="ic" data-t="pawn"></span>Bộ binh</td><td>Đi hoặc ăn 1 ô theo 8 hướng (cả chéo). Chọn nút <b>Đào hào / Xây cầu / Phá cầu</b> rồi bấm ô kề bên (4 hướng) để làm địa hình.</td></tr>
-   <tr><td><span class="ic" data-t="cav"></span>Kỵ binh</td><td>Chạy thẳng 1 đến 3 ô theo 4 hướng, không nhảy qua quân. Ăn quân ở ô cuối đường.</td></tr>
-   <tr><td><span class="ic" data-t="archer"></span>Cung thủ</td><td>Đi hoặc ăn 1 ô theo 4 hướng. Bắn đúng cách 2 ô theo 8 hướng, bắn qua được núi và không bị phản đòn. Hạ mọi quân trừ Khiên.</td></tr>
-   <tr><td><span class="ic" data-t="shield"></span>Khiên</td><td>Đi hoặc ăn 1 ô theo 8 hướng. Không bị đạn cung bắn trúng.</td></tr>
-   <tr><td><span class="ic" data-t="envoy"></span>Sứ giả</td><td>Không tấn công được. Đi tối đa 4 ô theo đường bộ, được rẽ nhưng không nhảy qua quân. Chạm vào là bị bắt.</td></tr>
-  </table>
-  <h2>Chơi chung một máy</h2>
-  <p>Đặt máy nằm giữa hai người ngồi đối diện. Quân Xanh đi trước. Khi hết 3 thao tác (hoặc bấm Kết thúc lượt), <b>bàn cờ tự xoay 180°</b> để người đối diện thấy bàn cờ y hệt như người trước đã thấy. Không có sương mù, cả hai thấy toàn bộ bàn cờ. Nút Đi lại chỉ dùng trong lượt của bạn.</p>
-  <h2>Địa hình</h2>
-  <p><b>Sông (hàng 6):</b> chỉ qua được bằng cầu B6, F6, J6 hoặc cầu Bộ binh xây thêm. Bộ binh cũng đào hào chặn đường hoặc phá cầu được.</p>
-  <p><b>Núi (F4, F8):</b> mọi quân không đi và không tấn công xuyên qua được, chỉ đạn Cung bắn qua được.</p>
-  <p><b>Rừng:</b> chỉ là ô đi lại bình thường.</p>
- </div>
 </div>
 <div id="game">
  <div id="bw"><div id="board"></div></div>
@@ -101,19 +74,15 @@ details{font-size:13px;line-height:1.45}
   <div id="st"></div>
   <div id="sel"></div>
   <div id="log"></div>
-  <details><summary>Luật chơi</summary>
-   <p>Mỗi bên 12 quân: 1 Tướng, 3 Bộ binh, 2 Kỵ binh, 2 Cung thủ, 2 Khiên, 2 Sứ giả. Mỗi lượt có 3 thao tác (đi/bắn một quân, hoặc đào/xây/phá của Bộ binh), có thể dùng cùng một quân nhiều lần; bấm Kết thúc lượt để nhường sớm. Bắt được Tướng địch là thắng.</p>
-   <p>Ăn quân giống cờ tướng: đi vào ô địch là ăn (trừ Cung thủ bắn từ xa).</p>
-   <p>Chơi chung một máy: sau mỗi lượt bàn cờ tự xoay 180° cho người ngồi đối diện. Không có sương mù.</p>
-   <p>Hàng sông ở hàng 6: chỉ qua được bằng cầu B6, F6, J6 (hoặc cầu do Bộ binh xây). Núi F4, F8 chặn mọi quân trừ đạn Cung.</p>
-  </details>
-  <div><button id="be">Kết thúc lượt</button> <button id="bu">Đi lại</button></div>
-  <div><label style="font-size:13px"><input type="checkbox" id="ra" checked style="width:auto"> Xoay cả bảng điều khiển</label></div>
-  <div><button id="bn">Ván mới</button> <button id="bl">Về sảnh</button></div>
+  <div>
+   <button id="bu">Đi lại</button>
+   <button id="bn">Ván mới</button>
+   <button id="bl">Về sảnh</button>
+  </div>
  </div>
 </div>
 <script>
-const N=11,NAMES={general:'Tướng',pawn:'Bộ binh',cav:'Kỵ binh',archer:'Cung thủ',shield:'Khiên',envoy:'Sứ giả'};
+const NC=11,NR=13,NAMES={general:'Tướng',pawn:'Bộ binh',cav:'Kỵ binh',archer:'Cung thủ',shield:'Khiên',envoy:'Sứ giả'};
 const DESC={
 general:'Đi 1 ô 8 hướng (ăn được), hoặc 2 ô khi ô giữa trống (chỉ đi). Tầm chỉ huy 3 ô.',
 pawn:'Đi/ăn 1 ô 8 hướng (cả chéo). Đào hào, xây cầu, phá cầu ở ô kề (4 hướng).',
@@ -124,27 +93,26 @@ envoy:'Đi tối đa 4 ô theo đường bộ (được rẽ), không nhảy qua
 const SIDE=['Xanh','Đỏ'],COL=['#1f6f6b','#9b2929'],TERR={dig:'plain',bridge:'water',break:'bridge'};
 const MODEN={move:'Đi / ăn',dig:'Đào hào',bridge:'Xây cầu',break:'Phá cầu'};
 const D4=[[1,0],[-1,0],[0,1],[0,-1]],D8=D4.concat([[1,1],[1,-1],[-1,1],[-1,-1]]);
-const col=i=>i%N,row=i=>(i/N)|0,inb=(c,r)=>c>=0&&c<N&&r>=0&&r<N,ix=(c,r)=>r*N+c;
+const col=i=>i%NC,row=i=>(i/NC)|0,inb=(c,r)=>c>=0&&c<NC&&r>=0&&r<NR,ix=(c,r)=>r*NC+c;
 const cheb=(a,b)=>Math.max(Math.abs(col(a)-col(b)),Math.abs(row(a)-row(b)));
 const lab=i=>'ABCDEFGHIJK'[col(i)]+(row(i)+1);
 const $=id=>document.getElementById(id);
 
 /* ====== LOGIC ====== */
 function newState(){
- const board=Array(121).fill('plain');
- for(let c=0;c<N;c++)board[ix(c,5)]='water';
- [1,5,9].forEach(c=>board[ix(c,5)]='bridge');
- [[0,7],[9,7],[0,3],[9,3],[3,0],[3,10],[7,0],[7,10],[3,3],[3,7],[7,3],[7,7]].forEach(([c,r])=>board[ix(c,r)]='forest');
- board[ix(5,3)]=board[ix(5,7)]='mountain';
+ const board=Array(NC*NR).fill('plain');
+ for(let c=0;c<NC;c++)board[ix(c,6)]='water';
+ [1,5,9].forEach(c=>board[ix(c,6)]='bridge');
+ [[0,8],[10,8],[0,4],[10,4],[3,0],[3,12],[7,0],[7,12],[3,4],[3,8],[7,4],[7,8]].forEach(([c,r])=>board[ix(c,r)]='forest');
+ board[ix(5,4)]=board[ix(5,8)]='mountain';
  const L=[['general',5,0],['envoy',4,0],['envoy',6,0],['cav',3,1],['cav',7,1],['archer',4,1],['archer',6,1],['shield',4,2],['shield',6,2],['pawn',2,2],['pawn',5,2],['pawn',8,2]];
  const pieces=[];let id=0;
- for(const side of [0,1])for(const [t,c,r] of L)pieces.push({id:id++,side,type:t,pos:side?ix(10-c,10-r):ix(c,r),alive:true,cargo:{}});
+ for(const side of [0,1])for(const [t,c,r] of L)pieces.push({id:id++,side,type:t,pos:side?ix(NC-1-c,NR-1-r):ix(c,r),alive:true,cargo:{}});
  return{board,pieces,turn:0,left:3,n:0,winner:null,mem:[{},{}],log:[]};
 }
 const occ=s=>{const o={};s.pieces.forEach(p=>{if(p.alive)o[p.pos]=p});return o};
 const pass=(s,i)=>s.board[i]!=='mountain'&&s.board[i]!=='water';
 
-/* known(i): có coi ô i chứa quân địch hay không (địch không biết = coi như ô trống) */
 function gen(s,p,known){
  const o=occ(s),out=[],c0=col(p.pos),r0=row(p.pos);
  const st=i=>{const q=o[i];return!q?0:q.side===p.side?1:known(i)?2:0};
@@ -243,7 +211,10 @@ envoy:'<g fill="none" stroke="#fff" stroke-width="2.2"><rect x="3" y="5" width="
 const tok=(p,x='')=>`<div class="pc ${x}"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11.5" fill="${COL[p.side]}" stroke="#fff4d6"/><g transform="translate(12 12) scale(.7) translate(-12 -12)" fill="#fff">${ICON[p.type]}</g></svg></div>`;
 
 function render(){
- const s=G.s,solo=G.solo,vs=solo?0:G.me,o=occ(s),side=solo?s.turn:G.me,myTurn=(solo||s.turn===G.me)&&s.winner===null;
+ const s=G.s,solo=G.solo;
+ // Fix: always view from current turn's side (or winner), so home is near the physical player after CSS rotate
+ const vs = solo ? (s.winner!==null && s.winner!=='draw' ? s.winner : s.turn) : G.me;
+ const o=occ(s),side=solo?s.turn:G.me,myTurn=(solo||s.turn===G.me)&&s.winner===null;
  let L=null;G.vis=new Set();
  if(!solo){L=live(s,vs);seeEnemies(s,vs,L).forEach(q=>G.vis.add(q.pos))}
  const hl={};let sp=G.sel!=null?s.pieces[G.sel]:null;
@@ -254,11 +225,11 @@ function render(){
    if(TERR[G.mode]===s.board[j]&&!(o[j]&&(o[j].side===side||solo||G.vis.has(j))))hl[j]='hb'});
  }
  let h='';
- for(let y=0;y<N;y++)for(let x=0;x<N;x++){
-  const c=vs===0?x:10-x,r=vs===0?10-y:y,i=ix(c,r),t=s.board[i],pc=o[i];
+ for(let y=0;y<NR;y++)for(let x=0;x<NC;x++){
+  const c=vs===0?x:NC-1-x,r=vs===0?NR-1-y:y,i=ix(c,r),t=s.board[i],pc=o[i];
   let inner='';
   if(x===0)inner+=`<span class="cy">${r+1}</span>`;
-  if(y===N-1)inner+=`<span class="cx">${'ABCDEFGHIJK'[c]}</span>`;
+  if(y===NR-1)inner+=`<span class="cx">${'ABCDEFGHIJK'[c]}</span>`;
   if(t==='forest')inner+='<svg class="ter" viewBox="0 0 24 24"><rect x="10.3" y="16" width="3.4" height="7.5" fill="#6b4a2a"/><path d="M12 .5L18.5 9H15l6 7.5H3L9 9H5.5z" fill="#2f7a3a" stroke="#1f5a2a" stroke-width=".6" stroke-linejoin="round"/></svg>';
   if(t==='mountain')inner+='<svg class="ter" viewBox="0 0 24 24"><path d="M0 24L8.5 3.5L12.8 11L16 7L24 24z" fill="#85857e" stroke="#5c5c56" stroke-width=".6" stroke-linejoin="round"/><path d="M8.5 3.5L6.4 8.6L8.6 7.6L10.4 9.4L11.2 8z" fill="#f6f6f0"/><path d="M16 7L14.2 10.6L16 9.8L17.6 11z" fill="#f6f6f0"/></svg>';
   if(pc&&(solo||pc.side===vs||G.vis.has(i))){
@@ -273,8 +244,9 @@ function render(){
  }
  $('board').innerHTML=h;
  $('bu').disabled=!canUndo();
- const rot=s.winner!==null&&s.winner!=='draw'?s.winner===1:s.turn===1;
- $('game').classList.toggle('rot',rot&&G.rotAll);$('bw').classList.toggle('rot',rot&&!G.rotAll);
+ // Rotate when viewing from side 1 so the opposite player sees upright + their home near them
+ const needRot = (vs===1);
+ $('game').classList.toggle('rot',needRot&&G.rotAll);$('bw').classList.toggle('rot',needRot&&!G.rotAll);
  let st;
  if(s.winner==='draw')st='Hòa: cả hai Tướng cùng ngã.';
  else if(s.winner!==null)st=`${SIDE[s.winner]} thắng!`+(!solo&&s.winner===G.me?' 🎉':'');
@@ -325,12 +297,9 @@ $('sel').onclick=e=>{const b=e.target.closest('button[data-m]');if(b){G.mode=b.d
 
 const msg=t=>$('lobmsg').textContent=t;
 function start(me,solo){G.s=newState();G.hist=[];G.undoUsed=false;G.me=0;G.solo=true;G.sel=null;G.mode='move';$('lobby').style.display='none';$('game').style.display='flex';render()}
-document.querySelectorAll('.ic').forEach(e=>e.innerHTML=tok({side:0,type:e.dataset.t}));
 $('bs').onclick=()=>start();
-$('be').onclick=()=>{const s=G.s;if(s.winner===null&&(G.solo||s.turn===G.me))act({k:'end'},false)};
 $('bu').onclick=()=>{if(canUndo())undo(false)};
 $('bl').onclick=()=>{if(G.solo||!G.s||G.s.winner!==null||confirm('Thoát về sảnh? Ván đang chơi sẽ kết thúc.'))toLobby()};
-$('ra').onchange=e=>{G.rotAll=e.target.checked;render()};
 $('bn').onclick=()=>{start()};
 if('serviceWorker' in navigator&&location.protocol.indexOf('http')===0)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
